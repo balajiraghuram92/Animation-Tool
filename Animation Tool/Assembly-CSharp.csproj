@@ -59,6 +59,8 @@
     <Compile Include="Assets\Scripts\ChangeAnimation.cs" />
     <Compile Include="Assets\Scripts\CameraMovement.cs" />
     <Compile Include="Assets\Scripts\CameraRotation.cs" />
+    <Compile Include="Assets\Scripts\CameraRotate.cs" />
+    <Compile Include="Assets\Scripts\ChangeModels.cs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="UnityEngine">

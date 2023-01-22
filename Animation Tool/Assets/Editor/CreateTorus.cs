@@ -21,10 +21,11 @@ public class ModelAndAnimationsImporter: EditorWindow {
 	public AnimatorState  idlestate ;
 	//Version_2(multiple Folder)
 	static List<string> FolderNames;
-	
+	static List<string> ModelNames;
+
 	string editingValue;
 	string lastFocusedControl;
-
+	static List<string> _modelNameList;
 
 	private class Context {
 		public string modelFilePath;
@@ -164,30 +165,30 @@ public class ModelAndAnimationsImporter: EditorWindow {
 		Context ctx = new Context(); // Create context and temp folder
 		internalModelImport(ctx);	
 	}
-//	[MenuItem("AnimationImporter/ImportAnimations")]
-//	public static void ModelImportBatchGUI() {
-//		string animsFolderPath = EditorUtility.OpenFolderPanel("Select animations folder...", "", "");
-//		List<string> modelFilePathList = new List<string>();
-//		bool done = false;
-//		while(!done) {
-//			string path = EditorUtility.OpenFilePanel("Select model file...", "", "FBX");
-//			if(path == null || path.Length <= 0) {
-//				done = true;
-//				break;
-//			}
-//			modelFilePathList.Add(path);
-//			
-//			if(EditorUtility.DisplayDialog("Done?", "Have you selected all models?", "Yes", "No"))
-//				done = true;
-//		}
-//		string[] modelFilePaths = modelFilePathList.ToArray();
-//		ModelImport(modelFilePaths, animsFolderPath);
-//	}
+	//	[MenuItem("AnimationImporter/ImportAnimations")]
+	//	public static void ModelImportBatchGUI() {
+	//		string animsFolderPath = EditorUtility.OpenFolderPanel("Select animations folder...", "", "");
+	//		List<string> modelFilePathList = new List<string>();
+	//		bool done = false;
+	//		while(!done) {
+	//			string path = EditorUtility.OpenFilePanel("Select model file...", "", "FBX");
+	//			if(path == null || path.Length <= 0) {
+	//				done = true;
+	//				break;
+	//			}
+	//			modelFilePathList.Add(path);
+	//			
+	//			if(EditorUtility.DisplayDialog("Done?", "Have you selected all models?", "Yes", "No"))
+	//				done = true;
+	//		}
+	//		string[] modelFilePaths = modelFilePathList.ToArray();
+	//		ModelImport(modelFilePaths, animsFolderPath);
+	//	}
 	//Version_1
 	//GUIContent AnimationsFolderLabel = new GUIContent("AnimationsFolder");
 
-
-
+	static bool _loadAnimationWindow = false;
+	static bool _loadModelWindow = false;
 
 	const string applicationName = "AnimationImporter";
 	GUIContent LoadAnimationsLabel = new GUIContent("LoadAnimations");
@@ -197,59 +198,132 @@ public class ModelAndAnimationsImporter: EditorWindow {
 		// Show existing open window, or make new one.
 		ModelAndAnimationsImporter window = EditorWindow.GetWindow(typeof(ModelAndAnimationsImporter)) as ModelAndAnimationsImporter;
 		window.Show();
-		FolderNames = new List<string>(); 
+		FolderNames = new List<string>();
+		_loadAnimationWindow = true;
+		_loadModelWindow = false;
+	}
+	
+	GUIContent LoadModelLabel = new GUIContent("LoadModels");
+	[MenuItem("AnimationImporter/LoadModels")]
+	static void LoadModels()
+	{
+		// Show existing open window, or make new one.
+		ModelAndAnimationsImporter window = EditorWindow.GetWindow(typeof(ModelAndAnimationsImporter)) as ModelAndAnimationsImporter;
+		window.Show();
+		ModelNames = new List<string>();
+		_modelNameList = new List<string>();
+		_loadAnimationWindow = false;
+		_loadModelWindow = true;
 	}
 
 	void OnGUI ()
 	{
-//		var AnimationsFolder = EditorPrefs.GetString(applicationName + "AnimationsFolder", "");
-//		AnimationsFolder	= EditorGUILayout.TextField(AnimationsFolderLabel, AnimationsFolder);
-//		EditorPrefs.SetString(applicationName + "AnimationsFolder", AnimationsFolder);
-		EditorGUILayout.HelpBox("Multiple Animations Loader.\nPress Enter to apply field changes.", MessageType.Info);
-		 
-		List<string> editedValues = new List<string>();
-		string newValue;
-		if (FolderNames != null) {
-			foreach (string val in FolderNames) {
-				newValue = val;
-			
-				if (ShowField ("field " + val, ref newValue)) {
-					if (string.IsNullOrEmpty (newValue))
-						continue;
-				
-					if (FolderNames.IndexOf (newValue) >= 0)
-						newValue = val;
+		//		var AnimationsFolder = EditorPrefs.GetString(applicationName + "AnimationsFolder", "");
+		//		AnimationsFolder	= EditorGUILayout.TextField(AnimationsFolderLabel, AnimationsFolder);
+		//		EditorPrefs.SetString(applicationName + "AnimationsFolder", AnimationsFolder);
+		if (_loadAnimationWindow)
+		{
+			EditorGUILayout.HelpBox("Multiple Animations Loader.\nPress Enter to apply field changes.", MessageType.Info);
+
+			List<string> editedValues = new List<string>();
+			string newValue;
+			if (FolderNames != null)
+			{
+				foreach (string val in FolderNames)
+				{
+					newValue = val;
+
+					if (ShowField("field " + val, ref newValue))
+					{
+						if (string.IsNullOrEmpty(newValue))
+							continue;
+
+						if (FolderNames.IndexOf(newValue) >= 0)
+							newValue = val;
+					}
+
+					editedValues.Add(newValue);
 				}
-			
-				editedValues.Add (newValue);
 			}
-		}
-		newValue = "";
-		
-		if (ShowField("new field", ref newValue)) {
-			if (!string.IsNullOrEmpty(newValue) && FolderNames.IndexOf(newValue) < 0)
-				editedValues.Add(newValue);
-		}
-		
-		FolderNames = editedValues;
+			newValue = "";
 
-		EditorGUILayout.BeginHorizontal();
-		
-		GUILayout.FlexibleSpace();
-		
-		if (GUILayout.Button(LoadAnimationsLabel)){	
-			ResetObjects();
-			CreateCanvas(); 
-			_animTransition = new List<AnimatorStateTransition>();
-			foreach(string _foldername in FolderNames){
-				CreateButtonPanel(_foldername);
-				CreateAnimatorController(_foldername);
-				LoadAnimations(_foldername);
-
+			if (ShowField("new field", ref newValue))
+			{
+				if (!string.IsNullOrEmpty(newValue) && FolderNames.IndexOf(newValue) < 0)
+					editedValues.Add(newValue);
 			}
+
+			FolderNames = editedValues;
+
+			EditorGUILayout.BeginHorizontal();
+
+			GUILayout.FlexibleSpace();
+
+			if (GUILayout.Button(LoadAnimationsLabel))
+			{
+				ResetObjects();
+				CreateCanvas();
+				_animTransition = new List<AnimatorStateTransition>();
+				foreach (string _foldername in FolderNames)
+				{
+					CreateButtonPanel(_foldername);
+					CreateAnimatorController(_foldername);
+					LoadAnimations(_foldername);
+
+				}
+			}
+
+			EditorGUILayout.EndHorizontal();
 		}
-		
-		EditorGUILayout.EndHorizontal();
+
+		if (_loadModelWindow)
+		{
+			EditorGUILayout.HelpBox("Multiple Models Loader.\nPress Enter to apply field changes.", MessageType.Info);
+
+			List<string> _nameList = new List<string>();
+			string newValue;
+			if (ModelNames != null)
+			{
+				foreach (string val in ModelNames)
+				{
+					newValue = val;
+
+					if (ShowField("field " + val, ref newValue))
+					{
+						if (string.IsNullOrEmpty(newValue))
+							continue;
+
+						if (ModelNames.IndexOf(newValue) >= 0)
+							newValue = val;
+					}
+
+					_nameList.Add(newValue);
+				}
+			}
+			newValue = "";
+
+			if (ShowField("new field", ref newValue))
+			{
+				if (!string.IsNullOrEmpty(newValue) && ModelNames.IndexOf(newValue) < 0)
+					_nameList.Add(newValue);
+			}
+
+			ModelNames = _nameList;
+
+			EditorGUILayout.BeginHorizontal();
+
+			GUILayout.FlexibleSpace();
+
+			if (GUILayout.Button(LoadModelLabel))
+			{
+				ResetObjects();
+				foreach (string _foldername in ModelNames)
+					LoadModelFbx(_foldername);
+				CreateModelCanvas();
+			}
+
+			EditorGUILayout.EndHorizontal();
+		}
 	}
 
 
@@ -257,6 +331,8 @@ public class ModelAndAnimationsImporter: EditorWindow {
 	{
 		if(_BTNPanel != null)
 			_BTNPanel.Clear();
+		if (_modelNameList != null)
+			_modelNameList.Clear();
 		controller = null;
 		rootStateMachine = null;
 		stateMachineStand = null;
@@ -312,11 +388,36 @@ public class ModelAndAnimationsImporter: EditorWindow {
 		return applying;
 	}
 
+	//Used for Loading Models for DIsplay
+
+	int _num = 0;
+	void LoadModelFbx(string _folderName)
+	{
+		string mypath = Application.dataPath;
+		string resourcepath = string.Concat("/Resources", "/", _folderName, "/");
+		mypath = string.Concat(mypath, "/Resources", "/", _folderName);
+		DirectoryInfo dir = new DirectoryInfo(mypath);
+		FileInfo[] fileinfo = dir.GetFiles("*.fbx");
+		if (fileinfo != null && fileinfo.Length > 0)
+			foreach (FileInfo file in fileinfo)
+				CreateModelFbx(file.Name, resourcepath, _folderName);
+	}
+	
 
 
+	GameObject _Modelbasemodel = null;
+	void CreateModelFbx(string _filenames, string _path, string _foldername)
+	{
+			_Modelbasemodel = (GameObject)AssetDatabase.LoadAssetAtPath("Assets" + _path + _filenames, typeof(GameObject));
+			GameObject _model = Instantiate(_Modelbasemodel);
+			string _name = _filenames.Replace(".fbx", "").Trim();
+			_modelNameList.Add(_name);
+			_model.name = _name;
+		
+	}
 
 
-
+	//Used For Loading Animations
 	int _count = 0;
 	void LoadAnimations(string _folderName)
 	{
@@ -490,7 +591,7 @@ public class ModelAndAnimationsImporter: EditorWindow {
 			GameObject _EventSystem = Instantiate (_eventSystem);
 			_EventSystem.name = _eventSystem.name;
 		}
-		GameObject _goButton = (GameObject)AssetDatabase.LoadAssetAtPath("Assets/Resources/Prefab/Canvas.prefab",typeof(GameObject));
+		GameObject _goButton = (GameObject)AssetDatabase.LoadAssetAtPath("Assets/Resources/Prefab/Animation_Canvas.prefab", typeof(GameObject));
 		_goButton.transform.name = _goButton.transform.name.Replace ("(clone)", "").Trim ();
 		GameObject _Button = Instantiate (_goButton);
 		_Button.name = _goButton.name; 
@@ -498,6 +599,40 @@ public class ModelAndAnimationsImporter: EditorWindow {
 			_canvasObj = GameObject.Find(_goButton.name);
 			if(_canvasObj.GetComponent<ChangeAnimation>() == null)
 			_canvasObj.AddComponent<ChangeAnimation> ();
+		}
+	}
+
+
+	public void CreateModelCanvas()
+	{
+		if (GameObject.Find("EventSystem") == null)
+		{
+			GameObject _eventSystem = (GameObject)AssetDatabase.LoadAssetAtPath("Assets/Resources/Prefab/EventSystem.prefab", typeof(GameObject));
+			_eventSystem.transform.name = _eventSystem.transform.name.Replace("(clone)", "").Trim();
+			GameObject _EventSystem = Instantiate(_eventSystem);
+			_EventSystem.name = _eventSystem.name;
+		}
+		GameObject _goButton = (GameObject)AssetDatabase.LoadAssetAtPath("Assets/Resources/Prefab/Model_Canvas.prefab", typeof(GameObject));
+		_goButton.transform.name = _goButton.transform.name.Replace("(clone)", "").Trim();
+		GameObject _Button = Instantiate(_goButton);
+		_Button.name = _goButton.name;
+		if (_canvasObj == null)
+		{
+			_canvasObj = GameObject.Find(_goButton.name);
+			if (_canvasObj.GetComponent<ChangeModels>() == null)
+				_canvasObj.AddComponent<ChangeModels>();
+			if (_modelNameList != null)
+			{
+				for (int i = 0; i < _modelNameList.Count; i++)
+				{
+					_canvasObj.GetComponent<ChangeModels>()._modelNames.Add(_modelNameList[i]);
+				}
+			}
+			if (GameObject.Find("Main Camera") != null)
+			{
+				GameObject _Camera = GameObject.Find("Main Camera");
+				_Camera.AddComponent<CameraRotate>();
+			}
 		}
 	}
 
@@ -610,7 +745,7 @@ public class ModelAndAnimationsImporter: EditorWindow {
 		if (levels != null && levels.Count > 0)
 			for (int i=0; i<levels.Count; i++)
 				LevelPath [i] = levels [i];
-		UnityEditor.PlayerSettings.runInBackground = false;
+		UnityEditor.PlayerSettings.runInBackground = false;  
 		BuildPlayerOptions buildPlayerOptions = new BuildPlayerOptions();
 		buildPlayerOptions.scenes = LevelPath;
 		buildPlayerOptions.locationPathName = path + "/" + "TestScene";
