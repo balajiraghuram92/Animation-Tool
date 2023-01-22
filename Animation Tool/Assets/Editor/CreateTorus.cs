@@ -610,8 +610,7 @@ public class ModelAndAnimationsImporter: EditorWindow {
 		if (levels != null && levels.Count > 0)
 			for (int i=0; i<levels.Count; i++)
 				LevelPath [i] = levels [i];
-		UnityEditor.PlayerSettings.runInBackground = false;  
-
+		UnityEditor.PlayerSettings.runInBackground = false;
 		BuildPlayerOptions buildPlayerOptions = new BuildPlayerOptions();
 		buildPlayerOptions.scenes = LevelPath;
 		buildPlayerOptions.locationPathName = path + "/" + "TestScene";
@@ -631,6 +630,8 @@ public class ModelAndAnimationsImporter: EditorWindow {
 			Debug.Log("Error building Win64");
 		}
 	}
+
+
 	
 //Editing the Button Events through Unity Action Events 
 //			_btn.GetComponent<Button>().onClick.AddListener(delegate {_btn.GetComponent<ChangeAnimation>().SelectedAnimation(_val,_foldername);}); 

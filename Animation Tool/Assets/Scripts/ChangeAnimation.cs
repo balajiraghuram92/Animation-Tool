@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using UnityEditor;
+using UnityEngine;
 using UnityEngine.UI;
 using System.Collections;
 using System.Collections.Generic;
@@ -7,6 +8,7 @@ using System.Collections.Generic;
 public class ChangeAnimation : MonoBehaviour {
 
 
+	public static ChangeAnimation _Instance;
 	public List<string> _basemodelname ; 
 	public GameObject _Camera;
 	public List<GameObject> ButtonsOBJ;
@@ -20,10 +22,17 @@ public class ChangeAnimation : MonoBehaviour {
 	Button[] _tempbutton;
 	Button[] _CharectorBtns;
 	int _charecterCount;
+	bool TakeSnap = true;
 	// Use this for initialization
+
+	public Transform CameraObject;
+	public Transform _selectedCharector;
+	[Range(0,10)]	
+	public float angularSpeed; 
+
 	void Awake () {
 
-		
+		_Instance = this;
 		SetCamera ();
 
 		foreach (string _modelName in _basemodelname) {
@@ -75,7 +84,10 @@ public class ChangeAnimation : MonoBehaviour {
 				btn.interactable = false;
 			}
 
-		}
+		} 
+		ShowCharector (_basemodelname [0],true);
+		if(angularSpeed == 0)
+		angularSpeed = 5;
  }
 
 	void SetButtons(string _name)
@@ -93,10 +105,15 @@ public class ChangeAnimation : MonoBehaviour {
 	{
 		foreach(string _modelname  in _basemodelname)
 		{
-			if(_modelname.Contains(_name))
-				_BaseModel[_name].SetActive(_val);
-			else
-				_BaseModel[_modelname].SetActive(false);
+			if (_modelname.Contains (_name)) 
+			{
+				_selectedCharector = _BaseModel [_name].transform;
+				_BaseModel [_name].SetActive (_val);
+			}
+			else 
+			{
+				_BaseModel [_modelname].SetActive (false);
+			}
 		}
 	}
 
@@ -137,6 +154,7 @@ public class ChangeAnimation : MonoBehaviour {
 				ShowNextCharector ();
 			});
 		}
+		CameraObject = _Camera.transform;
 		 
 
 	}
@@ -196,8 +214,45 @@ public class ChangeAnimation : MonoBehaviour {
 		 
 	}
 
-
+	void Update()
+	{
+		if (_selectedCharector != null && _Camera != null) 
+		{
+			if (Input.GetMouseButton (0)) 
+			{
+				_Camera.transform.LookAt (_selectedCharector);
+				_Camera.transform.RotateAround (_selectedCharector.position, Vector3.up, Input.GetAxis ("Mouse X") * angularSpeed);
+			}
+		}
+	}
 	 
 
+	[MenuItem("ScreenShot/TakeSnapShot")]
+	public static void SnapShot() 
+	{
+		_Instance.TakeSnapShot ();
+		_Instance._charecterCount = 0;
+	}
+
+	public   void TakeSnapShot()
+	{
+		if (_charecterCount < _basemodelname.Count && _basemodelname.Count > 1) {
+				ShowCharector (_basemodelname [_charecterCount], true);
+				SetButtons (_basemodelname [_charecterCount]);
+				_Charector_Name.text = _basemodelname [_charecterCount]; 
+				CharectorChangeBTN ();
+				StartCoroutine (Timer (_basemodelname [_charecterCount]));
+				} 
+	}
+
+	 
+	IEnumerator Timer(string _name)
+	{
+		ScreenCapture.CaptureScreenshot (_name+".png");
+		yield return new  WaitForSeconds (2);
+		_charecterCount++;
+		TakeSnapShot ();
+
+	}
 
 }
